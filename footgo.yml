@@ -1,0 +1,35 @@
+---
+- hosts: web-server
+  become: yes
+#  remote_user: vagrant
+# vars:
+# http_port: 80
+  tasks:
+    - name: install git
+      apt:
+        name: git
+        state: latest
+
+    - name: install maven
+      apt:
+        name: maven
+        state: latest
+
+    - name: install mysql
+      apt:
+        name: mysql-server
+        state: latest
+
+    - name: clone footgo
+      git:
+        repo: 'https://github.com/WiseHands/FootGo.git'
+        version: 'release/1.0.0'
+        dest: /home/vagrant/footgo
+    - name: clone scripts
+      git:
+        repo: 'https://github.com/WiseHands/FootGo.git'
+        dest: /home/vagrant/footgo
+    - name: setup db access
+      script: 
+    - name: compile footgo app
+      command: mvn clean package
