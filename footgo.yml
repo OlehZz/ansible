@@ -1,9 +1,7 @@
 ---
 - hosts: web-server
   become: yes
-#  remote_user: vagrant
-# vars:
-# http_port: 80
+
   tasks:
     - name: install git
       apt:
@@ -16,20 +14,52 @@
         state: latest
 
     - name: install mysql
+      apt: pkg={{ item }} state=present
+      with_items:
+        - mysql-client
+        - python-mysqldb
+        - python3-pymysql
+        - python3-dev
+        - libmysqlclient-dev
+   - name: Install Python package manager
       apt:
-        name: mysql-server
-        state: latest
+        name: python3-pip
+        state: present
 
-    - name: clone footgo
+    - name: Install the Python
+      pip:
+        name: mysqlclient
+
+    - name: setup files
       git:
         repo: 'https://github.com/WiseHands/FootGo.git'
         version: 'release/1.0.0'
         dest: /home/vagrant/footgo
-    - name: clone scripts
-      git:
-        repo: 'https://github.com/WiseHands/FootGo.git'
-        dest: /home/vagrant/footgo
     - name: setup db access
-      script: 
+      script: script.sh
     - name: compile footgo app
-      command: mvn clean package
+      shell: mvn clean package
+      args:
+        chdir: /home/vagrant/footgo
+        executable: /bin/bash
+      environment:
+        MAVEN_HOME: /usr/share/maven
+        JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+
+    - name: Create database user
+      mysql_user:
+        login_user: root
+        login_password: pwd
+        name: root
+        password: pwd
+        priv: '*.*:ALL'
+        state: present
+    - name: Create a new database with name 'footgo'
+    mysql_db:
+        login_user: root
+        login_password: pwd
+        name: footgo
+        state: present
+
+    - name: run site
+      shell: ( ( nohup java -jar /home/vagrant/footgo/target/ROOT.war </dev/null 1>/dev/null 2>&1 ) &)
